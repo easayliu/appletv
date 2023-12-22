@@ -79,7 +79,7 @@ jobs:
         cat Source/aptv_v4.m3u
     - name: fangmingminglive
       run: |
-        wget https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv6.m3u -O China_v6_fangmingming.tmp
+        wget https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/v6.m3u -O China_v6_fangmingming.tmp
         cat China_v6_fangmingming.tmp > China_v6.m3u
     - name: 国内频道IPv6
       run : |
