@@ -122,7 +122,7 @@ http://118.254.203.236:8888/rtp/239.76.253.94:9000
 #EXTINF:-1 tvg-id="青海卫视" tvg-name="青海卫视" tvg-logo="https://epg.112114.xyz/logo/青海卫视.png" group-title="IPv6卫视",青海卫视
 http://118.254.203.236:8888/rtp/239.76.254.132:9000
 #EXTINF:-1 tvg-id="三沙卫视" tvg-name="三沙卫视" tvg-logo="https://epg.112114.xyz/logo/三沙卫视.png" group-title="IPv6卫视",三沙卫视
-https://epg.112114.xyz/logo/三沙卫视.png
+http://118.254.203.236:8888/rtp/239.76.253.74:9000
 #EXTINF:-1 tvg-id="CETV1[高清]" tvg-name="CETV1[高清]" tvg-logo="https://epg.112114.xyz/logo/CETV1.png" group-title="IPv6央视",CETV-1
 http://221.219.66.252:18888/rtp/239.3.1.57:8152
 #EXTINF:-1 tvg-id="CETV-4高清" tvg-name="CETV-4高清" tvg-logo="https://epg.112114.xyz/logo/CETV4.png" group-title="IPv6央视",CETV-4
