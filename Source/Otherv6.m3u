@@ -1,6 +1,4 @@
 #EXTM3U
-#EXTINF:-1 tvg-name="IPv6央视高网" tvg-logo="https://epg.112114.xyz/logo/央视高网.png" group-title="IPv6央视,央视高网
-https://tv.iill.top/live/gefwq
 #EXTINF:-1 tvg-id="BRTV新闻[高清]" tvg-name="BRTV新闻[高清]" tvg-logo="https://epg.112114.xyz/logo/BRTV新闻.png" group-title="IPv6数字",BRTV新闻 
 http://221.219.66.252:18888/rtp/239.3.1.159:8000
 #EXTINF:-1 tvg-id="BRTV影视[高清]" tvg-name="BRTV影视[高清]" tvg-logo="https://epg.112114.xyz/logo/BRTV影视.png" group-title="IPv6数字",BRTV影视 
