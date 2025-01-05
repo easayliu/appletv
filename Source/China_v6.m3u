@@ -90,6 +90,12 @@ rtp://239.3.1.240:8172
 #EXTINF:-1 tvg-id="41" tvg-name="东南卫视" tvg-logo="https://live.fanmingming.com/tv/东南卫视.png" group-title="IPv6卫视",东南卫视
 rtp://239.3.1.156:8148
 #EXTM3U x-tvg-url="https://epg.aptv.app/pp.xml.gz"
+#EXTINF:-1 tvg-name="CHC影迷电影" group-title="IPv6央视",CHC影迷电影
+http://[2409:8087:7008:20::8]/dbiptv.sn.chinamobile.com/PLTV/88888888/224/3221226463/1.m3u8
+#EXTINF:-1 tvg-name="CHC动作电影" group-title="IPv6央视",CHC动作电影
+http://[2409:8087:7008:20::2]/dbiptv.sn.chinamobile.com/PLTV/88888888/224/3221226465/1.m3u8
+#EXTINF:-1 tvg-name="CHC家庭影院" group-title="IPv6央视",CHC家庭影院
+http://[2409:8087:7008:20::8]/dbiptv.sn.chinamobile.com/PLTV/88888888/224/3221226462/1.m3u8
 #EXTINF:-1 tvg-id="CCTV1" tvg-name="CCTV1" group-title="IPv6央视",CCTV1
 http://[2409:8087:5e08:24::2]:6610/000000001000/1000000001000018602/index.m3u8?channel-id=ystenlive&Contentid=1000000001000018602&livemode=1&stbId=3
 #EXTINF:-1 tvg-id="CCTV2" tvg-name="CCTV2" group-title="IPv6央视",CCTV2
