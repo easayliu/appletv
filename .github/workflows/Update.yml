@@ -1,439 +1,439 @@
-name: 生成自用Apple TV直播列表
+# name: 生成自用Apple TV直播列表
 
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/*.yml'
-      - 'ChannelList/*.list'
-      - 'ChannelLogo/*/*.png'
-  schedule:
-    - cron: 0 */1 * * *
-  watch:
-    types: [started]
+# on:
+#   workflow_dispatch:
+#   push:
+#     branches:
+#       - main
+#     paths:
+#       - '.github/workflows/*.yml'
+#       - 'ChannelList/*.list'
+#       - 'ChannelLogo/*/*.png'
+#   schedule:
+#     - cron: 0 */1 * * *
+#   watch:
+#     types: [started]
 
-env:
-  TZ: Asia/Shanghai
-  TELEGRAM_NOTIFICATION: false
-  TELEGRAM_NOTIFICATION_CONTENT: <b>📺 AppleTVライブチャンネルが更新しました！</b>
-  GROUP_NAME_CCTV: 央视
-  GROUP_NAME_SATT: 卫视
-  GROUP_NAME_CCTVv6: IPv6央视
-  GROUP_NAME_SATTv6: IPv6卫视
-  GROUP_NAME_LOCAL: IPv6地方
-  GROUP_NAME_DIG: IPv6数字
-  GROUP_NAME_JP: 日本
-  GROUP_NAME_EN: 英文
-  GROUP_NAME_SCI: 科教
-  GROUP_NAME_HK: 香港
-  GROUP_NAME_TW: 台湾
-  GROUP_NAME_MO: 澳门
-  HKTW_ADD: false
-  GET: true
+# env:
+#   TZ: Asia/Shanghai
+#   TELEGRAM_NOTIFICATION: false
+#   TELEGRAM_NOTIFICATION_CONTENT: <b>📺 AppleTVライブチャンネルが更新しました！</b>
+#   GROUP_NAME_CCTV: 央视
+#   GROUP_NAME_SATT: 卫视
+#   GROUP_NAME_CCTVv6: IPv6央视
+#   GROUP_NAME_SATTv6: IPv6卫视
+#   GROUP_NAME_LOCAL: IPv6地方
+#   GROUP_NAME_DIG: IPv6数字
+#   GROUP_NAME_JP: 日本
+#   GROUP_NAME_EN: 英文
+#   GROUP_NAME_SCI: 科教
+#   GROUP_NAME_HK: 香港
+#   GROUP_NAME_TW: 台湾
+#   GROUP_NAME_MO: 澳门
+#   HKTW_ADD: false
+#   GET: true
 
-jobs:
-  GenerateList:
-    runs-on: macos-latest
+# jobs:
+#   GenerateList:
+#     runs-on: macos-latest
 
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        ref: main
-        fetch-depth: 0
-        lfs: true
+#     steps:
+#     - name: Checkout
+#       uses: actions/checkout@v3
+#       with:
+#         ref: main
+#         fetch-depth: 0
+#         lfs: true
     
-    - name: Set git identity
-      run : |
-        git config --global user.email "easayliu@gmail.com"
-        git config --global user.name "easayliu"
+#     - name: Set git identity
+#       run : |
+#         git config --global user.email "easayliu@gmail.com"
+#         git config --global user.name "easayliu"
     
-    - name: 获取当前日期
-      id: date
-      run: echo "DATE=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+#     - name: 获取当前日期
+#       id: date
+#       run: echo "DATE=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
     
-    - name: 获取最新源
-      run : |
-        wget https://raw.githubusercontent.com/Kimentanm/aptv/master/m3u/iptv.m3u -O aptv.tmp
-        wget https://raw.githubusercontent.com/YueChan/Live/main/IPTV.m3u -O yuechan.tmp
-        wget https://raw.githubusercontent.com/YanG-1989/m3u/main/Gather.m3u -O gather.tmp
+#     - name: 获取最新源
+#       run : |
+#         wget https://raw.githubusercontent.com/Kimentanm/aptv/master/m3u/iptv.m3u -O aptv.tmp
+#         wget https://raw.githubusercontent.com/YueChan/Live/main/IPTV.m3u -O yuechan.tmp
+#         wget https://raw.githubusercontent.com/YanG-1989/m3u/main/Gather.m3u -O gather.tmp
 
-    - name: APTV国内频道IPv4
-      run : |
-        # 生成APTV央视卫视V4
-        awk '
-        {
-          if($0~/\#EXTM3U/) {print $0};
-          if($0~/group-title=\"央视IPV4\"/ || $0~/group-title=\"卫视IPV4\"/) {m=NR; n=NR+1};
-          if(m<=NR && NR<=n) {
-            gsub("央视IPV4","'"$GROUP_NAME_CCTV"'");
-            gsub("\"卫视IPV4","\"'"$GROUP_NAME_SATT"'");
-            gsub(/CCTV5.\"/,"CCTV5+体育赛事\"");
-            print $0;
-          };
-        }
-        ' aptv.tmp>Source/APTV_v4.m3u
-        echo "********APTV临时文件********"
-        cat Source/aptv_v4.m3u
-    - name: fangmingminglive
-      run: |
-        wget https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv6.m3u -O China_v6_fangmingming.tmp
-        cat China_v6_fangmingming.tmp > China_v6.m3u
-    - name: 国内频道IPv6
-      run : |
-        # 生成V6临时文件
-        awk '
-        {
-          gsub("\"央视","\"'"$GROUP_NAME_CCTVv6"'");
-          if($0~/(tvg-name=\"CCTV|CCTV4K)/) {gsub(/group-title=\".*\"/, "group-title=\"'"$GROUP_NAME_CCTVv6"'\"")};
-          gsub(/CCTV5.\"/,"CCTV5+体育赛事\"");
-          gsub("\"电视指南","\"CCTV电视指南");
-          gsub(/tvg-name=\"中国教育/,"tvg-name=\"CETV");
-          if($0~/NEWTV/) {gsub(",",",NEWTV")};
-          if($0~/tvg-name=\"(CCTV|CETV|CGTN)/) {gsub(/group-title=\".*\"/, "group-title=\"'"$GROUP_NAME_CCTVv6"'\"")};
-          if($0~/group-title=\"卫视\"/ && $0!~/tvg-name=\".*卫视\".*tvg-logo/) {gsub("\"卫视","\"'"$GROUP_NAME_LOCAL"'")};
-          if($0~/tvg-name=\".*卫视\".*tvg-logo/ || $0~/凤凰/) {gsub(/group-title=\".*\"/, "group-title=\"'"$GROUP_NAME_SATTv6"'\"")};
-          if($0!~/group-title=\"('"$GROUP_NAME_CCTVv6"'|'"$GROUP_NAME_SATTv6"'|'"$GROUP_NAME_LOCAL"')\"/) {gsub(/group-title=\".*\"/, "group-title=\"'"$GROUP_NAME_DIG"'\"")};
-          print $0;
-        }
-        ' yuechan.tmp>yuechan_v6.tmp
-        echo "********V6临时文件********"
-        cat yuechan_v6.tmp
+#     - name: APTV国内频道IPv4
+#       run : |
+#         # 生成APTV央视卫视V4
+#         awk '
+#         {
+#           if($0~/\#EXTM3U/) {print $0};
+#           if($0~/group-title=\"央视IPV4\"/ || $0~/group-title=\"卫视IPV4\"/) {m=NR; n=NR+1};
+#           if(m<=NR && NR<=n) {
+#             gsub("央视IPV4","'"$GROUP_NAME_CCTV"'");
+#             gsub("\"卫视IPV4","\"'"$GROUP_NAME_SATT"'");
+#             gsub(/CCTV5.\"/,"CCTV5+体育赛事\"");
+#             print $0;
+#           };
+#         }
+#         ' aptv.tmp>Source/APTV_v4.m3u
+#         echo "********APTV临时文件********"
+#         cat Source/aptv_v4.m3u
+#     - name: fangmingminglive
+#       run: |
+#         wget https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv6.m3u -O China_v6_fangmingming.tmp
+#         cat China_v6_fangmingming.tmp > China_v6.m3u
+#     - name: 国内频道IPv6
+#       run : |
+#         # 生成V6临时文件
+#         awk '
+#         {
+#           gsub("\"央视","\"'"$GROUP_NAME_CCTVv6"'");
+#           if($0~/(tvg-name=\"CCTV|CCTV4K)/) {gsub(/group-title=\".*\"/, "group-title=\"'"$GROUP_NAME_CCTVv6"'\"")};
+#           gsub(/CCTV5.\"/,"CCTV5+体育赛事\"");
+#           gsub("\"电视指南","\"CCTV电视指南");
+#           gsub(/tvg-name=\"中国教育/,"tvg-name=\"CETV");
+#           if($0~/NEWTV/) {gsub(",",",NEWTV")};
+#           if($0~/tvg-name=\"(CCTV|CETV|CGTN)/) {gsub(/group-title=\".*\"/, "group-title=\"'"$GROUP_NAME_CCTVv6"'\"")};
+#           if($0~/group-title=\"卫视\"/ && $0!~/tvg-name=\".*卫视\".*tvg-logo/) {gsub("\"卫视","\"'"$GROUP_NAME_LOCAL"'")};
+#           if($0~/tvg-name=\".*卫视\".*tvg-logo/ || $0~/凤凰/) {gsub(/group-title=\".*\"/, "group-title=\"'"$GROUP_NAME_SATTv6"'\"")};
+#           if($0!~/group-title=\"('"$GROUP_NAME_CCTVv6"'|'"$GROUP_NAME_SATTv6"'|'"$GROUP_NAME_LOCAL"')\"/) {gsub(/group-title=\".*\"/, "group-title=\"'"$GROUP_NAME_DIG"'\"")};
+#           print $0;
+#         }
+#         ' yuechan.tmp>yuechan_v6.tmp
+#         echo "********V6临时文件********"
+#         cat yuechan_v6.tmp
 
-        # 生成V6央视卫视
-        awk '
-        {
-          if($0~/\#EXTM3U/) {print $0};
-          if($0~/group-title=\"'"$GROUP_NAME_CCTVv6"'\"/ || $0~/group-title=\"'"$GROUP_NAME_SATTv6"'\"/) {m=NR; n=NR+1};
-          if(m<=NR && NR<=n) {
-            print $0;
-          };
-        }
-        ' yuechan_v6.tmp>chinav6_1.tmp
-        echo "********V6央视卫视********"
-        cat chinav6_1.tmp
+#         # 生成V6央视卫视
+#         awk '
+#         {
+#           if($0~/\#EXTM3U/) {print $0};
+#           if($0~/group-title=\"'"$GROUP_NAME_CCTVv6"'\"/ || $0~/group-title=\"'"$GROUP_NAME_SATTv6"'\"/) {m=NR; n=NR+1};
+#           if(m<=NR && NR<=n) {
+#             print $0;
+#           };
+#         }
+#         ' yuechan_v6.tmp>chinav6_1.tmp
+#         echo "********V6央视卫视********"
+#         cat chinav6_1.tmp
 
-        # 生成V6地方电视台
-        awk '
-        {
-          if($0~/\#EXTM3U/) {print $0};
-          if($0~/group-title=\"'"$GROUP_NAME_LOCAL"'\"/) {m=NR; n=NR+1};
-          if(m<=NR && NR<=n) {
-            print $0;
-          };
-        }
-        ' yuechan_v6.tmp>localv6.tmp
-        echo "********V6地方频道********"
-        cat localv6.tmp
+#         # 生成V6地方电视台
+#         awk '
+#         {
+#           if($0~/\#EXTM3U/) {print $0};
+#           if($0~/group-title=\"'"$GROUP_NAME_LOCAL"'\"/) {m=NR; n=NR+1};
+#           if(m<=NR && NR<=n) {
+#             print $0;
+#           };
+#         }
+#         ' yuechan_v6.tmp>localv6.tmp
+#         echo "********V6地方频道********"
+#         cat localv6.tmp
 
-        # 生成APTV央视卫视V6
-        awk '
-        {
-          if($0~/\#EXTM3U/) {print $0};
-          if($0~/group-title=\"央视IPV6\"/ || $0~/group-title=\"卫视IPV6\"/ || $0~/group-title=\"其他\"/) {m=NR; n=NR+1};
-          if(m<=NR && NR<=n) {
-            gsub("央视IPV6","'"$GROUP_NAME_CCTVv6"'");
-            gsub("\"卫视IPV6","\"'"$GROUP_NAME_SATTv6"'");
-            gsub(/CCTV5.\"/,"CCTV5+体育赛事\"");
-            print $0;
-          };
-        }
-        ' aptv.tmp>chinav6_2.tmp
-        echo "********APTV临时文件********"
-        cat chinav6_2.tmp
+#         # 生成APTV央视卫视V6
+#         awk '
+#         {
+#           if($0~/\#EXTM3U/) {print $0};
+#           if($0~/group-title=\"央视IPV6\"/ || $0~/group-title=\"卫视IPV6\"/ || $0~/group-title=\"其他\"/) {m=NR; n=NR+1};
+#           if(m<=NR && NR<=n) {
+#             gsub("央视IPV6","'"$GROUP_NAME_CCTVv6"'");
+#             gsub("\"卫视IPV6","\"'"$GROUP_NAME_SATTv6"'");
+#             gsub(/CCTV5.\"/,"CCTV5+体育赛事\"");
+#             print $0;
+#           };
+#         }
+#         ' aptv.tmp>chinav6_2.tmp
+#         echo "********APTV临时文件********"
+#         cat chinav6_2.tmp
 
-        # 生成V6数字电视台
-        awk '
-        {
-          if($0~/group-title=\"('"$GROUP_NAME_CCTVv6"'|'"$GROUP_NAME_SATTv6"'|'"$GROUP_NAME_LOCAL"')\"/) {next};
-          if($0~/\#EXTM3U/) {print $0};
-          if($0~/group-title=/) {m=NR; n=NR+1};
-          if(m<=NR && NR<=n) {
-            print $0;
-          };
-        }
-        ' yuechan_v6.tmp>Source/Otherv6.m3u
-        echo "********V6其他********"
-        cat Source/Otherv6.m3u
+#         # 生成V6数字电视台
+#         awk '
+#         {
+#           if($0~/group-title=\"('"$GROUP_NAME_CCTVv6"'|'"$GROUP_NAME_SATTv6"'|'"$GROUP_NAME_LOCAL"')\"/) {next};
+#           if($0~/\#EXTM3U/) {print $0};
+#           if($0~/group-title=/) {m=NR; n=NR+1};
+#           if(m<=NR && NR<=n) {
+#             print $0;
+#           };
+#         }
+#         ' yuechan_v6.tmp>Source/Otherv6.m3u
+#         echo "********V6其他********"
+#         cat Source/Otherv6.m3u
 
-        cat chinav6_1.tmp chinav6_2.tmp > Source/China_v6.m3u
+#         cat chinav6_1.tmp chinav6_2.tmp > Source/China_v6.m3u
 
-    - name: 重新排序国内频道并更换透明图标
-      run : |
-        awk '
-        {
-          gsub("\"央视","\"'"$GROUP_NAME_CCTV"'");
-          gsub("\"卫视","\"'"$GROUP_NAME_SATT"'");
-          print $0;
-        }
-        ' ChannelList/China.list>Chinalist.tmp
+#     - name: 重新排序国内频道并更换透明图标
+#       run : |
+#         awk '
+#         {
+#           gsub("\"央视","\"'"$GROUP_NAME_CCTV"'");
+#           gsub("\"卫视","\"'"$GROUP_NAME_SATT"'");
+#           print $0;
+#         }
+#         ' ChannelList/China.list>Chinalist.tmp
 
-        awk -F'"' '
-        {
-          info=$0;
-          name=$4;
-          gsub(/group-title=\"央视\"/, "group-title=\"'"$GROUP_NAME_CCTV"'\"");
-          gsub(/group-title=\"卫视\"/, "group-title=\"'"$GROUP_NAME_SATT"'\"");
-          # 到第一个空行为止 if(length(info)==0) {exit};
-          if(info~/\#EXIT/) {exit};
-          if($0~/\#EXTM3U/) {print $0};
-          if(info~/综合/) {
-            name="CCTV1\"";
-            close("Source/APTV_v4.m3u");
-            cmd="awk '\''/"name"/{getline;print}'\'' Source/APTV_v4.m3u";
-            cmd | getline churl;
-            print info;
-            print churl;
-            close(cmd);
-            next;
-          };
-          if(info~/体育赛事/) {
-            name="体育赛事";
-            close("Source/APTV_v4.m3u");
-            cmd="awk '\''/"name"/{getline;print}'\'' Source/APTV_v4.m3u";
-            cmd | getline churl;
-            print info;
-            print churl;
-            close(cmd);
-            next;
-          };
-          if(info~/EXTINF/ && info!~/HaveURL/) {
-            churl="null";
-            close("Source/APTV_v4.m3u");
-            cmd="awk '\''/"name"/{getline;print}'\'' Source/APTV_v4.m3u";
-            cmd | getline churl;
-            if(churl!="null") {
-              print info;
-              print churl;
-            };
-            close(cmd);
-          };
-        }
-        ' Chinalist.tmp>China_v4.m3u
+#         awk -F'"' '
+#         {
+#           info=$0;
+#           name=$4;
+#           gsub(/group-title=\"央视\"/, "group-title=\"'"$GROUP_NAME_CCTV"'\"");
+#           gsub(/group-title=\"卫视\"/, "group-title=\"'"$GROUP_NAME_SATT"'\"");
+#           # 到第一个空行为止 if(length(info)==0) {exit};
+#           if(info~/\#EXIT/) {exit};
+#           if($0~/\#EXTM3U/) {print $0};
+#           if(info~/综合/) {
+#             name="CCTV1\"";
+#             close("Source/APTV_v4.m3u");
+#             cmd="awk '\''/"name"/{getline;print}'\'' Source/APTV_v4.m3u";
+#             cmd | getline churl;
+#             print info;
+#             print churl;
+#             close(cmd);
+#             next;
+#           };
+#           if(info~/体育赛事/) {
+#             name="体育赛事";
+#             close("Source/APTV_v4.m3u");
+#             cmd="awk '\''/"name"/{getline;print}'\'' Source/APTV_v4.m3u";
+#             cmd | getline churl;
+#             print info;
+#             print churl;
+#             close(cmd);
+#             next;
+#           };
+#           if(info~/EXTINF/ && info!~/HaveURL/) {
+#             churl="null";
+#             close("Source/APTV_v4.m3u");
+#             cmd="awk '\''/"name"/{getline;print}'\'' Source/APTV_v4.m3u";
+#             cmd | getline churl;
+#             if(churl!="null") {
+#               print info;
+#               print churl;
+#             };
+#             close(cmd);
+#           };
+#         }
+#         ' Chinalist.tmp>China_v4.m3u
 
-        awk '
-        {
-          gsub("\"央视","\"'"$GROUP_NAME_CCTVv6"'");
-          gsub("\"卫视","\"'"$GROUP_NAME_SATTv6"'");
-          print $0;
-        }
-        ' ChannelList/China.list>Chinalist.tmp
+#         awk '
+#         {
+#           gsub("\"央视","\"'"$GROUP_NAME_CCTVv6"'");
+#           gsub("\"卫视","\"'"$GROUP_NAME_SATTv6"'");
+#           print $0;
+#         }
+#         ' ChannelList/China.list>Chinalist.tmp
 
-        awk -F'"' '
-        {
-          info=$0;
-          name=$4;
-          # 到第一个空行为止 if(length(info)==0) {exit};
-          if(info~/\#EXIT/) {exit};
-          if($0~/\#EXTM3U/) {print $0};
-          if(info~/综合/) {
-            name="CCTV1\"";
-            close("Source/China_v6.m3u");
-            cmd="awk '\''/"name"/{getline;print}'\'' Source/China_v6.m3u";
-            cmd | getline churl;
-            print info;
-            print churl;
-            close(cmd);
-            next;
-          };
-          if(info~/体育赛事/) {
-            name="体育赛事";
-            close("Source/China_v6.m3u");
-            cmd="awk '\''/"name"/{getline;print}'\'' Source/China_v6.m3u";
-            cmd | getline churl;
-            print info;
-            print churl;
-            close(cmd);
-            next;
-          };
-          if(info~/EXTINF/ && info!~/HaveURL/) {
-            churl="null";
-            close("Source/China_v6.m3u");
-            cmd="awk '\''/"name"/{getline;print}'\'' Source/China_v6.m3u";
-            cmd | getline churl;
-            if(churl!="null") {
-              print info;
-              print churl;
-            };
-            close(cmd);
-          };
-        }
-        ' Chinalist.tmp>China_v6.tmp
+#         awk -F'"' '
+#         {
+#           info=$0;
+#           name=$4;
+#           # 到第一个空行为止 if(length(info)==0) {exit};
+#           if(info~/\#EXIT/) {exit};
+#           if($0~/\#EXTM3U/) {print $0};
+#           if(info~/综合/) {
+#             name="CCTV1\"";
+#             close("Source/China_v6.m3u");
+#             cmd="awk '\''/"name"/{getline;print}'\'' Source/China_v6.m3u";
+#             cmd | getline churl;
+#             print info;
+#             print churl;
+#             close(cmd);
+#             next;
+#           };
+#           if(info~/体育赛事/) {
+#             name="体育赛事";
+#             close("Source/China_v6.m3u");
+#             cmd="awk '\''/"name"/{getline;print}'\'' Source/China_v6.m3u";
+#             cmd | getline churl;
+#             print info;
+#             print churl;
+#             close(cmd);
+#             next;
+#           };
+#           if(info~/EXTINF/ && info!~/HaveURL/) {
+#             churl="null";
+#             close("Source/China_v6.m3u");
+#             cmd="awk '\''/"name"/{getline;print}'\'' Source/China_v6.m3u";
+#             cmd | getline churl;
+#             if(churl!="null") {
+#               print info;
+#               print churl;
+#             };
+#             close(cmd);
+#           };
+#         }
+#         ' Chinalist.tmp>China_v6.tmp
 
-        cat China_v6.tmp localv6.tmp Source/Otherv6.m3u > China_v6_1.m3u
+#         cat China_v6.tmp localv6.tmp Source/Otherv6.m3u > China_v6_1.m3u
 
-    - name: 其他频道
-      if: env.GET == 'true'
-      run : |
-        awk '
-        {
-          if($0~/\#EXTM3U/) {print $0};
-          if($0!~/(IPV6|咪咕)/ && $0 !~/^http/) {m=NR; n=NR+1};
-          if(m<=NR && NR<=n) {
-            gsub("央视IPV4","'"$GROUP_NAME_CCTV"'");
-            gsub("\"卫视IPV4","\"'"$GROUP_NAME_SATT"'");
-            gsub(/CCTV5.\"/,"CCTV5+体育赛事\"");
-            print $0;
-          };
-        }
-        ' gather.tmp>Source/Gather.m3u
-        echo "********Gather临时文件********"
-        cat Source/Gather.m3u
+#     - name: 其他频道
+#       if: env.GET == 'true'
+#       run : |
+#         awk '
+#         {
+#           if($0~/\#EXTM3U/) {print $0};
+#           if($0!~/(IPV6|咪咕)/ && $0 !~/^http/) {m=NR; n=NR+1};
+#           if(m<=NR && NR<=n) {
+#             gsub("央视IPV4","'"$GROUP_NAME_CCTV"'");
+#             gsub("\"卫视IPV4","\"'"$GROUP_NAME_SATT"'");
+#             gsub(/CCTV5.\"/,"CCTV5+体育赛事\"");
+#             print $0;
+#           };
+#         }
+#         ' gather.tmp>Source/Gather.m3u
+#         echo "********Gather临时文件********"
+#         cat Source/Gather.m3u
 
-    - name: 日本频道
-      if: env.GET == 'true'
-      run : |
-        awk '
-        {
-          if($0~/\#EXTM3U/) {print $0};
-          if($0~/group-title=\".*日本\"/) {
-            gsub(/group-title=\".*日本\"/,"group-title=\"'"$GROUP_NAME_JP"'\"");
-            gsub(/J SPORTS/,"J Sports");
-            getline churl;
-            if(churl!~/movie\.mcas\.jp/) {
-              print $0;
-              print churl;
-            };
-          };
-        }
-        ' gather.tmp>japan1.tmp
+#     - name: 日本频道
+#       if: env.GET == 'true'
+#       run : |
+#         awk '
+#         {
+#           if($0~/\#EXTM3U/) {print $0};
+#           if($0~/group-title=\".*日本\"/) {
+#             gsub(/group-title=\".*日本\"/,"group-title=\"'"$GROUP_NAME_JP"'\"");
+#             gsub(/J SPORTS/,"J Sports");
+#             getline churl;
+#             if(churl!~/movie\.mcas\.jp/) {
+#               print $0;
+#               print churl;
+#             };
+#           };
+#         }
+#         ' gather.tmp>japan1.tmp
 
-        wget https://raw.githubusercontent.com/iptv-org/iptv/master/streams/jp.m3u -O japan.tmp
-        awk '
-        {
-          if($0~/\#EXTM3U/) {print $0};
-          if($0~/\#EXTINF/) {m=NR; n=NR+1};
-          if(m<=NR && NR<=n) {
-            gsub(/ \(.*p\)/,"");
-            gsub(",TBS",",TBS TV");
-            gsub(/\",/,"\" group-title=\"'"$GROUP_NAME_JP"'\",");
-            print $0;
-          };
-        }
-        ' japan.tmp>japan2.tmp
+#         wget https://raw.githubusercontent.com/iptv-org/iptv/master/streams/jp.m3u -O japan.tmp
+#         awk '
+#         {
+#           if($0~/\#EXTM3U/) {print $0};
+#           if($0~/\#EXTINF/) {m=NR; n=NR+1};
+#           if(m<=NR && NR<=n) {
+#             gsub(/ \(.*p\)/,"");
+#             gsub(",TBS",",TBS TV");
+#             gsub(/\",/,"\" group-title=\"'"$GROUP_NAME_JP"'\",");
+#             print $0;
+#           };
+#         }
+#         ' japan.tmp>japan2.tmp
 
-        cat japan1.tmp japan2.tmp > Source/Japan.m3u
+#         cat japan1.tmp japan2.tmp > Source/Japan.m3u
 
-        awk '
-        {
-          gsub("\"日本","\"'"$GROUP_NAME_JP"'");
-          print $0;
-        }
-        ' ChannelList/Japan.list>Japanlist.tmp
+#         awk '
+#         {
+#           gsub("\"日本","\"'"$GROUP_NAME_JP"'");
+#           print $0;
+#         }
+#         ' ChannelList/Japan.list>Japanlist.tmp
         
-        awk -F'"' '
-        {
-          info=$0;
-          name=$4;
-          if(info~/\#EXIT/) {exit};
-          if($0~/\#EXTM3U/) {print $0};
-          if(info~/EXTINF/) {
-            if(info!~/URLARU/) {churl="null"} else {getline churl};
-            close("Source/Japan.m3u");
-            cmd="awk '\''/"name"/{getline;print}'\'' Source/Japan.m3u";
-            cmd | getline churl;
-            if(churl!="null") {
-              print info;
-              print churl;
-            };
-            close(cmd);
-          };
-        }
-        ' Japanlist.tmp>Japan.m3u
+#         awk -F'"' '
+#         {
+#           info=$0;
+#           name=$4;
+#           if(info~/\#EXIT/) {exit};
+#           if($0~/\#EXTM3U/) {print $0};
+#           if(info~/EXTINF/) {
+#             if(info!~/URLARU/) {churl="null"} else {getline churl};
+#             close("Source/Japan.m3u");
+#             cmd="awk '\''/"name"/{getline;print}'\'' Source/Japan.m3u";
+#             cmd | getline churl;
+#             if(churl!="null") {
+#               print info;
+#               print churl;
+#             };
+#             close(cmd);
+#           };
+#         }
+#         ' Japanlist.tmp>Japan.m3u
 
-    - name: 英文频道
-      if: env.GET == 'true'
-      run : |
-        awk '
-        {
-          gsub("group-title=\"英文\"","group-title=\"'"$GROUP_NAME_EN"'\"");
-          print $0;
-        }
-        ' ChannelList/English.list>Englishlist.tmp
+#     - name: 英文频道
+#       if: env.GET == 'true'
+#       run : |
+#         awk '
+#         {
+#           gsub("group-title=\"英文\"","group-title=\"'"$GROUP_NAME_EN"'\"");
+#           print $0;
+#         }
+#         ' ChannelList/English.list>Englishlist.tmp
 
-        awk -F'"' '
-        {
-          info=$0;
-          name=$4;
-          if(info~/\#EXIT/) {exit};
-          if($0~/\#EXTM3U/) {print $0};
-          if(info~/EXTINF/) {
-            if(info!~/URLARU/) {churl="null"};
-            if(info~/URLARU/) {getline churl};
-            close("gather.tmp");
-            cmd="awk '\''/"name"/{getline;print}'\'' gather.tmp";
-            cmd | getline churl;
-            if(churl!="null") {
-              print info;
-              print churl;
-            };
-            close(cmd);
-          };
-        }
-        ' Englishlist.tmp>English.m3u
+#         awk -F'"' '
+#         {
+#           info=$0;
+#           name=$4;
+#           if(info~/\#EXIT/) {exit};
+#           if($0~/\#EXTM3U/) {print $0};
+#           if(info~/EXTINF/) {
+#             if(info!~/URLARU/) {churl="null"};
+#             if(info~/URLARU/) {getline churl};
+#             close("gather.tmp");
+#             cmd="awk '\''/"name"/{getline;print}'\'' gather.tmp";
+#             cmd | getline churl;
+#             if(churl!="null") {
+#               print info;
+#               print churl;
+#             };
+#             close(cmd);
+#           };
+#         }
+#         ' Englishlist.tmp>English.m3u
 
-    - name: 科学记录频道
-      if: env.GET == 'false'
-      run : |
-        awk '
-        {
-          gsub("group-title=\"..科教.*\"","group-title=\"'"$GROUP_NAME_SCI"'\"");
-          print $0;
-        }
-        ' ChannelList/Sciences.list>Sciencestmp1.m3u
+#     - name: 科学记录频道
+#       if: env.GET == 'false'
+#       run : |
+#         awk '
+#         {
+#           gsub("group-title=\"..科教.*\"","group-title=\"'"$GROUP_NAME_SCI"'\"");
+#           print $0;
+#         }
+#         ' ChannelList/Sciences.list>Sciencestmp1.m3u
 
-        cat Sciencestmp*.m3u > Sciences.m3u
+#         cat Sciencestmp*.m3u > Sciences.m3u
 
-    - name: 生成AppleTV总列表
-      run : |
-        cat China_v4.m3u Japan.m3u English.m3u > IPTV.m3u
+#     - name: 生成AppleTV总列表
+#       run : |
+#         cat China_v4.m3u Japan.m3u English.m3u > IPTV.m3u
     
-    - name: 删除临时文件
-      run : |
-        rm -rf *.tmp
-        ls
+#     - name: 删除临时文件
+#       run : |
+#         rm -rf *.tmp
+#         ls
     
-    - name: 判断是否有变更
-      if: (!cancelled())
-      id: status
-      run: |
-        STR1="nothing to commit, working tree clean"
-        STR2="Changes not staged for commit"
-        out=$(git status)
-        if [[ "$(echo $out | grep "$STR1")" != "" ]]
-        then
-          echo "STATUS="nochange"" >> $GITHUB_OUTPUT
-        fi
-        if [[ "$(echo $out | grep "$STR2")" != "" ]]
-        then
-          echo "STATUS="change"" >> $GITHUB_OUTPUT
-        fi
+#     - name: 判断是否有变更
+#       if: (!cancelled())
+#       id: status
+#       run: |
+#         STR1="nothing to commit, working tree clean"
+#         STR2="Changes not staged for commit"
+#         out=$(git status)
+#         if [[ "$(echo $out | grep "$STR1")" != "" ]]
+#         then
+#           echo "STATUS="nochange"" >> $GITHUB_OUTPUT
+#         fi
+#         if [[ "$(echo $out | grep "$STR2")" != "" ]]
+#         then
+#           echo "STATUS="change"" >> $GITHUB_OUTPUT
+#         fi
     
-    - name: 合并到仓库
-      if: (!cancelled())
-      run : |
-        if [[ "${{steps.status.outputs.STATUS}}" == "change" ]]
-        then
-          git add .
-          git commit -m  "Update:${{steps.date.outputs.DATE}}"
-          git push origin main
-        fi
+#     - name: 合并到仓库
+#       if: (!cancelled())
+#       run : |
+#         if [[ "${{steps.status.outputs.STATUS}}" == "change" ]]
+#         then
+#           git add .
+#           git commit -m  "Update:${{steps.date.outputs.DATE}}"
+#           git push origin main
+#         fi
 
-    - name: 移除workflow运行
-      if: (!cancelled())
-      uses: GitRML/delete-workflow-runs@main
-      with:
-        retain_days: 1
-        keep_minimum_runs: 3
+#     - name: 移除workflow运行
+#       if: (!cancelled())
+#       uses: GitRML/delete-workflow-runs@main
+#       with:
+#         retain_days: 1
+#         keep_minimum_runs: 3
 
-    # - name: Telegram推送
-    #   if: env.TELEGRAM_NOTIFICATION == 'true' && !cancelled()  
-    #   run: |
-    #     if [[ "${{steps.status.outputs.STATUS}}" == "change" ]]
-    #     then
-    #       curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=${{ env.TELEGRAM_NOTIFICATION_CONTENT }}&parse_mode=HTML"
-    #       # curl -d "text=📺 AppleTVライブチャンネル更新しました！" -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendmessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}"
-    #     fi
+#     # - name: Telegram推送
+#     #   if: env.TELEGRAM_NOTIFICATION == 'true' && !cancelled()  
+#     #   run: |
+#     #     if [[ "${{steps.status.outputs.STATUS}}" == "change" ]]
+#     #     then
+#     #       curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=${{ env.TELEGRAM_NOTIFICATION_CONTENT }}&parse_mode=HTML"
+#     #       # curl -d "text=📺 AppleTVライブチャンネル更新しました！" -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendmessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}"
+#     #     fi
         
